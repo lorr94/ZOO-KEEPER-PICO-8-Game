@@ -12,6 +12,7 @@ local obstaclespawnrate = 60  -- number of frames between obstacle spawns
 local obstaclespawntimer = obstaclespawnrate
 local animalspawnrate = 120    -- number of frames between animal spawns
 local animalspawntimer = animalspawnrate
+local maxanimals = 5 -- maximum number of animals
 
 -- game setup function
 function _init()
@@ -77,17 +78,9 @@ function updateobstacles()
     end
 end
 
--- function to update animal positions
+-- function to update animal positions (modified to stand still)
 function updateanimals()
-    for _, animal in pairs(animals) do
-        -- move animals left and right (adjust speed as needed)
-        animal.x = animal.x + animal.speed
-
-        -- reverse direction if animals reach the screen boundaries
-        if (animal.x < 0 or animal.x > 120) then
-            animal.speed = -animal.speed
-        end
-    end
+    -- animals stand still, so no need for this function
 end
 
 -- function to draw entities
@@ -127,9 +120,9 @@ function spawnanimals()
     animalspawntimer = animalspawntimer - 1
 
     -- check if it's time to spawn a new animal
-    if (animalspawntimer <= 0) then
+    if (animalspawntimer <= 0 and #animals < maxanimals)  then
         -- spawn animal at a random x position at the top of the screen
-        local newanimal = { x = flr(rnd(120)), y = 0, speed = 1 }  -- adjust speed as needed
+        local newanimal = { x = flr(rnd(120)), y = 0 }  -- adjust speed as needed
         add(animals, newanimal)
 
         -- reset the spawn timer

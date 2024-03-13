@@ -1,0 +1,12 @@
+-- function to update animal positions
+function updateanimals()
+    for _, animal in pairs(animals) do
+        -- move animals left and right (adjust speed as needed)
+        animal.x = animal.x + animal.speed
+
+        -- reverse direction if animals reach the screen boundaries
+        if (animal.x < 0 or animal.x > 120) then
+            animal.speed = -animal.speed
+        end
+    end
+end
