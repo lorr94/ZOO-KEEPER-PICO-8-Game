@@ -23,6 +23,10 @@ function _init()
     player.y = 64
 
     -- set up initial game state
+    
+    
+    --debug test
+    printh("boot zoo_keeper.")
 end
 
 -- update function (called every frame)
@@ -101,7 +105,7 @@ function drawentities()
     -- draw animals, collectibles, and obstacles
     -- you may want to use different sprite numbers or draw custom sprites
     for _, animal in pairs(animals) do
-        spr(4, animal.x, animal.y)  -- placeholder sprite for animals (using sprite index 4)
+        spr(41, animal.x, animal.y)  -- placeholder sprite for animals (using sprite index 4)
     end
 
     for _, collectible in pairs(collectibles) do
@@ -109,7 +113,7 @@ function drawentities()
     end
 
     for _, obstacle in pairs(obstacles) do
-        spr(2, obstacle.x, obstacle.y)  -- placeholder sprite for obstacles
+        spr(40, obstacle.x, obstacle.y)  -- placeholder sprite for obstacles
     end
 end
 
