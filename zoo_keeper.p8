@@ -3,194 +3,263 @@ version 41
 __lua__
 --code block 0
 
--- game variables
-local player = { x = 64, y = 64, speed = 2, spriteheadindex = 1, spritebodyindex = 17, framecount = 0, framedelay = 5, lives = 3 }  -- placeholder player
+-- Game variables
+local player = { 
+    x = 64, y = 64, speed = 2, spriteheadindex = 1, spritebodyindex = 17, 
+    framecount = 0, framedelay = 5, lives = 3, gameover = false, 
+    immune = false, immune_time = 80, flicker_timer = 0  -- Set immune_time to 80 for 2.5 seconds
+}
 local animals = {}  -- placeholder for animal entities
 local collectibles = {}  -- placeholder for collectible items
 local obstacles = {}  -- placeholder for obstacles
 
--- Lives system
-local debugGodMode = false  -- Debug flag for god mode
-
--- obstacle and animal spawner variables
+-- Obstacle and animal spawner variables
 local obstaclespawnrate = 60  -- number of frames between obstacle spawns
 local obstaclespawntimer = obstaclespawnrate
 local animalspawnrate = 120    -- number of frames between animal spawns
 local animalspawntimer = animalspawnrate
 local maxanimals = 5  -- maximum number of animals
+local debugmode = false -- debug mode flag
 
--- game setup function
+-- Game setup function
 function _init()
-    -- initialize player
+    -- Initialize player
     player.x = 64
     player.y = 64
+    player.lives = 3  -- Set initial number of lives
+    player.gameover = false  -- Reset game over flag
+    player.immune = false  -- Reset immunity
+    player.immune_time = 80  -- Set immune time to 80 for 2.5 seconds
+    player.flicker_timer = 0  -- Reset flicker timer
 
-    -- set up initial game state
+    -- Set up initial game state
     
-    
-    --debug test
-    printh("boot zoo_keeper.")
+    -- Debug test
+    printh("Boot zoo_keeper.")
 end
 
--- update function (called every frame)
+-- Update function (called every frame)
 function _update()
-    -- update player position
-    if (not debugGodMode) then  -- Check if not in god mode
+    -- Toggle debug mode with key press (e.g., key 5)
+    if (btnp(5)) then
+        debugmode = not debugmode
+    end
+    
+    if player.gameover then
+        return  -- Skip updating if the game is over
+    end
+
+    -- Update player position
     if (btn(0)) then
-        player.x = player.x - player.speed  -- move left
+        player.x = player.x - player.speed  -- Move left
         updateplayeranimation()
     end
     if (btn(1)) then
-        player.x = player.x + player.speed  -- move right
+        player.x = player.x + player.speed  -- Move right
         updateplayeranimation()
-         end
     end
 
-    -- update other game entities
+    -- Enforce player boundaries
+    if player.x < 0 then
+        player.x = 0
+    end
+    if player.x > 112 then
+        player.x = 112
+    end
+
+    -- Update other game entities
     updateentities()
 
-    -- check for collisions
+    -- Check for collisions
     checkcollisions()
 
-    -- scroll background
+    -- Scroll background
     scrollbackground()
 
-    -- spawn obstacles and animals
+    -- Spawn obstacles and animals
     spawnobstacles()
     spawnanimals()
+
+    -- Handle immunity and flickering
+    if player.immune then
+        player.immune_time = player.immune_time - 1
+        if player.immune_time % 10 == 0 then
+            player.flicker_timer = not player.flicker_timer  -- Toggle flicker timer
+        end
+        if player.immune_time <= 0 then
+            player.immune = false
+            player.flicker_timer = 0
+        end
+    end
 end
 
--- draw function (called every frame)
+-- Draw function (called every frame)
 function _draw()
-    -- draw background
+    -- Draw background
     cls(3)
-    -- draw background elements (can be tiles, sprites, etc.)
+    -- Draw background elements (can be tiles, sprites, etc.)
 
-    -- draw player head
-    spr(player.spriteheadindex, player.x, player.y)
-    spr(player.spriteheadindex + 1, player.x + 8, player.y) -- offset head sprite
+    if player.gameover then
+        print("Game Over", 48, 64, 7)
+        return  -- Skip drawing other elements if the game is over
+    end
 
-    -- draw player body
-    spr(player.spritebodyindex, player.x, player.y + 8) -- offset body sprite
-    spr(player.spritebodyindex + 1, player.x + 8, player.y + 8) -- offset body sprite
+    -- Draw player head and body with flickering effect if immune
+    if not player.immune or player.flicker_timer then
+        spr(player.spriteheadindex, player.x, player.y)
+        spr(player.spriteheadindex + 1, player.x + 8, player.y) -- Offset head sprite
+        spr(player.spritebodyindex, player.x, player.y + 8) -- Offset body sprite
+        spr(player.spritebodyindex + 1, player.x + 8, player.y + 8) -- Offset body sprite
+    end
 
-    -- draw other game entities
+    -- Draw other game entities
     drawentities()
 
-    -- draw hud (score, lives, etc.)
-     print("Lives: " .. player.lives, 2, 2, 7)
+    -- Draw HUD (score, lives, etc.)
+    print("Lives: " .. player.lives, 10, 10, 7)
+
+    -- Debug mode indicator
+    if debugmode then
+        print("DEBUG MODE", 10, 20, 8)
+    end
 end
 
--- function to update entities
+-- Function to update entities
 function updateentities()
-    -- update animal positions, collectibles, and obstacles
-    -- you may want to move them, check for collisions, etc.
+    -- Update animal positions, collectibles, and obstacles
+    -- You may want to move them, check for collisions, etc.
     updateobstacles()
     updateanimals()
 end
 
--- function to update obstacle positions
+-- Function to update obstacle positions
 function updateobstacles()
     for _, obstacle in pairs(obstacles) do
-        obstacle.y = obstacle.y - 2  -- move obstacles upward (adjust speed as needed)
+        obstacle.y = obstacle.y - 2  -- Move obstacles upward (adjust speed as needed)
 
-        -- remove off-screen obstacles
+        -- Remove off-screen obstacles
         if (obstacle.y < 0) then
             del(obstacles, obstacle)
         end
     end
 end
 
--- function to update animal positions (modified to stand still)
+-- Function to update animal positions (modified to stand still)
 function updateanimals()
-    -- animals stand still, so no need for this function
+    -- Animals stand still, so no need for this function
 end
 
--- function to draw entities
+-- Function to draw entities
 function drawentities()
-    -- draw animals, collectibles, and obstacles
-    -- you may want to use different sprite numbers or draw custom sprites
+    -- Draw animals, collectibles, and obstacles
+    -- You may want to use different sprite numbers or draw custom sprites
     for _, animal in pairs(animals) do
-        spr(41, animal.x, animal.y)  -- placeholder sprite for animals (using sprite index 4)
+        spr(41, animal.x, animal.y)  -- Placeholder sprite for animals (using sprite index 41)
     end
 
     for _, collectible in pairs(collectibles) do
-        -- draw collectible sprite at its position
+        -- Draw collectible sprite at its position
     end
 
     for _, obstacle in pairs(obstacles) do
-        spr(40, obstacle.x, obstacle.y)  -- placeholder sprite for obstacles
+        spr(40, obstacle.x, obstacle.y)  -- Placeholder sprite for obstacles (using sprite index 40)
     end
 end
 
--- function to spawn obstacles
+-- Function to spawn obstacles
 function spawnobstacles()
     obstaclespawntimer = obstaclespawntimer - 1
 
-    -- check if it's time to spawn a new obstacle
+    -- Check if it's time to spawn a new obstacle
     if (obstaclespawntimer <= 0) then
-        -- spawn obstacle at a random x position
+        -- Spawn obstacle at a random x position
         local newobstacle = { x = flr(rnd(128)), y = 128 }
         add(obstacles, newobstacle)
 
-        -- reset the spawn timer
+        -- Reset the spawn timer
         obstaclespawntimer = obstaclespawnrate
     end
 end
 
--- function to spawn animals (modified to limit the number of animals)
+-- Function to spawn animals (modified to limit the number of animals)
 function spawnanimals()
     animalspawntimer = animalspawntimer - 1
 
-    -- check if it's time to spawn a new animal and if the maximum limit is not reached
+    -- Check if it's time to spawn a new animal and if the maximum limit is not reached
     if (animalspawntimer <= 0 and #animals < maxanimals) then
-        -- spawn animal at a random x position at the top of the screen
+        -- Spawn animal at a random x position at the top of the screen
         local newanimal = { x = flr(rnd(120)), y = 0 }
         add(animals, newanimal)
 
-        -- reset the spawn timer
+        -- Reset the spawn timer
         animalspawntimer = animalspawnrate
     end
 end
 
--- function to handle background scrolling
+-- Function to handle background scrolling
 function scrollbackground()
-    -- scroll the background vertically based on the game's pace
-    -- you can adjust the scrolling speed and add logic for looping backgrounds
+    -- Scroll the background vertically based on the game's pace
+    -- You can adjust the scrolling speed and add logic for looping backgrounds
 end
 
--- function to check collisions
+-- Function to check collisions
 function checkcollisions()
-    -- check player collision with animals, collectibles, and obstacles
-    -- implement this similar to the previous code example
-    for _, obstacle in pairs(obstacles) do
-        if (player.x < obstacle.x + 8 and
-            player.x + 8 > obstacle.x and
-            player.y < obstacle.y + 8 and
-            player.y + 8 > obstacle.y) then
-            -- Collision detected with an obstacle
-            player.lives = player.lives - 1
-            if player.lives <= 0 then
-                -- Game over logic can be added here
+    -- Check player collision with obstacles
+    if not player.immune then
+        for _, obstacle in pairs(obstacles) do
+            if (player.x < obstacle.x + 8 and
+                player.x + 8 > obstacle.x and
+                player.y < obstacle.y + 8 and
+                player.y + 8 > obstacle.y) then
+                -- Collision detected with an obstacle
+                if not debugmode then
+                    player.lives = player.lives - 1
+                    player.immune = true
+                    player.immune_time = 80  -- Set immune time to 80 for 2.5 seconds
+                end
+                if player.lives <= 0 then
+                    player.gameover = true
+                end
+                -- Remove the obstacle from the game
+                del(obstacles, obstacle)
+                break  -- Exit the loop after the first collision
             end
-            -- Remove the obstacle from the game
-            del(obstacles, obstacle)
-            break  -- Exit the loop after the first collision
+        end
+    end
+
+    -- Check player collision with animals
+    if not player.immune then
+        for _, animal in pairs(animals) do
+            if (player.x < animal.x + 8 and
+                player.x + 8 > animal.x and
+                player.y < animal.y + 8 and
+                player.y + 8 > animal.y) then
+                -- Collision detected with an animal
+                if not debugmode then
+                    player.lives = player.lives - 1
+                    player.immune = true
+                    player.immune_time = 80  -- Set immune time to 80 for 2.5 seconds
+                end
+                if player.lives <= 0 then
+                    player.gameover = true
+                end
+                break  -- Exit the loop after the first collision
+            end
         end
     end
 end
 
--- function to update player animation
+-- Function to update player animation
 function updateplayeranimation()
     player.framecount = player.framecount + 1
     if player.framecount >= player.framedelay then
         player.framecount = 0
         if player.spriteheadindex == 1 then
-            player.spriteheadindex = 3  -- switch to the second head sprite
-            player.spritebodyindex = 19  -- switch to the second torso sprite
+            player.spriteheadindex = 3  -- Switch to the second head sprite
+            player.spritebodyindex = 19  -- Switch to the second torso sprite
         else
-            player.spriteheadindex = 1  -- switch back to the first head sprite
-            player.spritebodyindex = 17  -- switch back to the first torso sprite
+            player.spriteheadindex = 1  -- Switch back to the first head sprite
+            player.spritebodyindex = 17  -- Switch back to the first torso sprite
         end
     end
 end
