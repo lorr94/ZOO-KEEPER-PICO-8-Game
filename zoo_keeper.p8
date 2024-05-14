@@ -4,10 +4,13 @@ __lua__
 --code block 0
 
 -- game variables
-local player = { x = 64, y = 64, speed = 2, spriteheadindex = 1, spritebodyindex = 17, framecount = 0, framedelay = 5 }  -- placeholder player
+local player = { x = 64, y = 64, speed = 2, spriteheadindex = 1, spritebodyindex = 17, framecount = 0, framedelay = 5, lives = 3 }  -- placeholder player
 local animals = {}  -- placeholder for animal entities
 local collectibles = {}  -- placeholder for collectible items
 local obstacles = {}  -- placeholder for obstacles
+
+-- Lives system
+local debugGodMode = false  -- Debug flag for god mode
 
 -- obstacle and animal spawner variables
 local obstaclespawnrate = 60  -- number of frames between obstacle spawns
@@ -32,6 +35,7 @@ end
 -- update function (called every frame)
 function _update()
     -- update player position
+    if (not debugGodMode) then  -- Check if not in god mode
     if (btn(0)) then
         player.x = player.x - player.speed  -- move left
         updateplayeranimation()
@@ -39,6 +43,7 @@ function _update()
     if (btn(1)) then
         player.x = player.x + player.speed  -- move right
         updateplayeranimation()
+         end
     end
 
     -- update other game entities
@@ -73,6 +78,7 @@ function _draw()
     drawentities()
 
     -- draw hud (score, lives, etc.)
+     print("Lives: " .. player.lives, 2, 2, 7)
 end
 
 -- function to update entities
@@ -157,6 +163,21 @@ end
 function checkcollisions()
     -- check player collision with animals, collectibles, and obstacles
     -- implement this similar to the previous code example
+    for _, obstacle in pairs(obstacles) do
+        if (player.x < obstacle.x + 8 and
+            player.x + 8 > obstacle.x and
+            player.y < obstacle.y + 8 and
+            player.y + 8 > obstacle.y) then
+            -- Collision detected with an obstacle
+            player.lives = player.lives - 1
+            if player.lives <= 0 then
+                -- Game over logic can be added here
+            end
+            -- Remove the obstacle from the game
+            del(obstacles, obstacle)
+            break  -- Exit the loop after the first collision
+        end
+    end
 end
 
 -- function to update player animation
