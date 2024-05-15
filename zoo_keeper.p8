@@ -21,6 +21,8 @@ local animalspawntimer = animalspawnrate
 local maxanimals = 5  -- maximum number of animals
 local debugmode = false -- debug mode flag
 
+local animalspeed = 0.2 -- speed at which animals move down
+
 -- Game setup function
 function _init()
     -- Initialize player
@@ -37,6 +39,139 @@ function _init()
     -- Debug test
     printh("Boot zoo_keeper.")
 end
+
+
+
+-- Draw function (called every frame)
+function _draw()
+    -- Draw background
+    cls(3)
+    -- Draw background elements (can be tiles, sprites, etc.)
+
+    if player.gameover then
+        print("Game Over", 48, 64, 7)
+        return  -- Skip drawing other elements if the game is over
+    end
+
+    -- Draw player head and body with flickering effect if immune
+    if not player.immune or player.flicker_timer then
+        spr(player.spriteheadindex, player.x, player.y)
+        spr(player.spriteheadindex + 1, player.x + 8, player.y) -- Offset head sprite
+        spr(player.spritebodyindex, player.x, player.y + 8) -- Offset body sprite
+        spr(player.spritebodyindex + 1, player.x + 8, player.y + 8) -- Offset body sprite
+    end
+
+    -- Draw other game entities
+    drawentities()
+
+    -- Draw HUD (score, lives, etc.)
+    print("Lives: " .. player.lives, 10, 10, 7)
+
+    -- Debug mode indicator
+    if debugmode then
+        print("DEBUG MODE", 10, 20, 8)
+    end
+end
+
+-- Function to update entities
+function updateentities()
+    -- Update animal positions, collectibles, and obstacles
+    -- You may want to move them, check for collisions, etc.
+    updateobstacles()
+    updateanimals()
+end
+
+-- Function to update obstacle positions
+function updateobstacles()
+    for _, obstacle in pairs(obstacles) do
+        obstacle.y = obstacle.y - 2  -- Move obstacles upward (adjust speed as needed)
+
+        -- Remove off-screen obstacles
+        if (obstacle.y < 0) then
+            del(obstacles, obstacle)
+        end
+    end
+end
+
+-- Function to update animal positions (modified to move slowly downward)
+function updateanimals()
+    for _, animal in pairs(animals) do
+        animal.y = animal.y + animalspeed  -- Move animals down slowly
+    end
+end
+
+-- Function to draw entities
+function drawentities()
+    -- Draw animals, collectibles, and obstacles
+    -- You may want to use different sprite numbers or draw custom sprites
+    for _, animal in pairs(animals) do
+        spr(41, animal.x, animal.y)  -- Placeholder sprite for animals (using sprite index 41)
+    end
+
+    for _, collectible in pairs(collectibles) do
+        -- Draw collectible sprite at its position
+    end
+
+    for _, obstacle in pairs(obstacles) do
+        spr(40, obstacle.x, obstacle.y)  -- Placeholder sprite for obstacles (using sprite index 40)
+    end
+end
+
+-- Function to spawn obstacles
+function spawnobstacles()
+    obstaclespawntimer = obstaclespawntimer - 1
+
+    -- Check if it's time to spawn a new obstacle
+    if (obstaclespawntimer <= 0) then
+        -- Spawn obstacle at a random x position
+        local newobstacle = { x = flr(rnd(128)), y = 128 }
+        add(obstacles, newobstacle)
+
+        -- Reset the spawn timer
+        obstaclespawntimer = obstaclespawnrate
+    end
+end
+
+-- Function to spawn animals (modified to limit the number of animals)
+function spawnanimals()
+    animalspawntimer = animalspawntimer - 1
+
+    -- Check if it's time to spawn a new animal and if the maximum limit is not reached
+    if (animalspawntimer <= 0 and #animals < maxanimals) then
+        -- Spawn animal at a random x position at the top of the screen
+        local newanimal = { x = flr(rnd(120)), y = 0 }
+        add(animals, newanimal)
+
+        -- Reset the spawn timer
+        animalspawntimer = animalspawnrate
+    end
+end
+
+-- Function to handle background scrolling
+function scrollbackground()
+    -- Scroll the background vertically based on the game's pace
+    -- You can adjust the scrolling speed and add logic for looping backgrounds
+end
+
+
+
+-- Function to update player animation
+function updateplayeranimation()
+    player.framecount = player.framecount + 1
+    if player.framecount >= player.framedelay then
+        player.framecount = 0
+        if player.spriteheadindex == 1 then
+            player.spriteheadindex = 3  -- Switch to the second head sprite
+            player.spritebodyindex = 19  -- Switch to the second torso sprite
+        else
+            player.spriteheadindex = 1  -- Switch back to the first head sprite
+            player.spritebodyindex = 17  -- Switch back to the first torso sprite
+        end
+    end
+end
+-->8
+-- code block 1
+
 
 -- Update function (called every frame)
 function _update()
@@ -93,115 +228,6 @@ function _update()
     end
 end
 
--- Draw function (called every frame)
-function _draw()
-    -- Draw background
-    cls(3)
-    -- Draw background elements (can be tiles, sprites, etc.)
-
-    if player.gameover then
-        print("Game Over", 48, 64, 7)
-        return  -- Skip drawing other elements if the game is over
-    end
-
-    -- Draw player head and body with flickering effect if immune
-    if not player.immune or player.flicker_timer then
-        spr(player.spriteheadindex, player.x, player.y)
-        spr(player.spriteheadindex + 1, player.x + 8, player.y) -- Offset head sprite
-        spr(player.spritebodyindex, player.x, player.y + 8) -- Offset body sprite
-        spr(player.spritebodyindex + 1, player.x + 8, player.y + 8) -- Offset body sprite
-    end
-
-    -- Draw other game entities
-    drawentities()
-
-    -- Draw HUD (score, lives, etc.)
-    print("Lives: " .. player.lives, 10, 10, 7)
-
-    -- Debug mode indicator
-    if debugmode then
-        print("DEBUG MODE", 10, 20, 8)
-    end
-end
-
--- Function to update entities
-function updateentities()
-    -- Update animal positions, collectibles, and obstacles
-    -- You may want to move them, check for collisions, etc.
-    updateobstacles()
-    updateanimals()
-end
-
--- Function to update obstacle positions
-function updateobstacles()
-    for _, obstacle in pairs(obstacles) do
-        obstacle.y = obstacle.y - 2  -- Move obstacles upward (adjust speed as needed)
-
-        -- Remove off-screen obstacles
-        if (obstacle.y < 0) then
-            del(obstacles, obstacle)
-        end
-    end
-end
-
--- Function to update animal positions (modified to stand still)
-function updateanimals()
-    -- Animals stand still, so no need for this function
-end
-
--- Function to draw entities
-function drawentities()
-    -- Draw animals, collectibles, and obstacles
-    -- You may want to use different sprite numbers or draw custom sprites
-    for _, animal in pairs(animals) do
-        spr(41, animal.x, animal.y)  -- Placeholder sprite for animals (using sprite index 41)
-    end
-
-    for _, collectible in pairs(collectibles) do
-        -- Draw collectible sprite at its position
-    end
-
-    for _, obstacle in pairs(obstacles) do
-        spr(40, obstacle.x, obstacle.y)  -- Placeholder sprite for obstacles (using sprite index 40)
-    end
-end
-
--- Function to spawn obstacles
-function spawnobstacles()
-    obstaclespawntimer = obstaclespawntimer - 1
-
-    -- Check if it's time to spawn a new obstacle
-    if (obstaclespawntimer <= 0) then
-        -- Spawn obstacle at a random x position
-        local newobstacle = { x = flr(rnd(128)), y = 128 }
-        add(obstacles, newobstacle)
-
-        -- Reset the spawn timer
-        obstaclespawntimer = obstaclespawnrate
-    end
-end
-
--- Function to spawn animals (modified to limit the number of animals)
-function spawnanimals()
-    animalspawntimer = animalspawntimer - 1
-
-    -- Check if it's time to spawn a new animal and if the maximum limit is not reached
-    if (animalspawntimer <= 0 and #animals < maxanimals) then
-        -- Spawn animal at a random x position at the top of the screen
-        local newanimal = { x = flr(rnd(120)), y = 0 }
-        add(animals, newanimal)
-
-        -- Reset the spawn timer
-        animalspawntimer = animalspawnrate
-    end
-end
-
--- Function to handle background scrolling
-function scrollbackground()
-    -- Scroll the background vertically based on the game's pace
-    -- You can adjust the scrolling speed and add logic for looping backgrounds
-end
-
 -- Function to check collisions
 function checkcollisions()
     -- Check player collision with obstacles
@@ -219,6 +245,12 @@ function checkcollisions()
                 end
                 if player.lives <= 0 then
                     player.gameover = true
+                end
+                -- Move player up by the height of the player character (16 pixels)
+                player.y = player.y - 16
+                -- Ensure the player doesn't move out of the screen bounds
+                if player.y < 0 then
+                    player.y = 0
                 end
                 -- Remove the obstacle from the game
                 del(obstacles, obstacle)
@@ -248,23 +280,6 @@ function checkcollisions()
         end
     end
 end
-
--- Function to update player animation
-function updateplayeranimation()
-    player.framecount = player.framecount + 1
-    if player.framecount >= player.framedelay then
-        player.framecount = 0
-        if player.spriteheadindex == 1 then
-            player.spriteheadindex = 3  -- Switch to the second head sprite
-            player.spritebodyindex = 19  -- Switch to the second torso sprite
-        else
-            player.spriteheadindex = 1  -- Switch back to the first head sprite
-            player.spritebodyindex = 17  -- Switch back to the first torso sprite
-        end
-    end
-end
--->8
--- code block 1
 __gfx__
 00000000000009999990000000000999999000000000000000099000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000044444444444444004444444444444400000000000444400000000000000000000000000000000000000000000000000000000000000000000000000
