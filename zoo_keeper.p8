@@ -13,6 +13,8 @@ local animals = {}  -- placeholder for animal entities
 local collectibles = {}  -- placeholder for collectible items
 local obstacles = {}  -- placeholder for obstacles
 
+local powerups = {}
+
 -- Obstacle and animal spawner variables
 local obstaclespawnrate = 60  -- number of frames between obstacle spawns
 local obstaclespawntimer = obstaclespawnrate
@@ -23,24 +25,17 @@ local debugmode = false -- debug mode flag
 
 local animalspeed = 0.2 -- speed at which animals move down
 
+local healthpoweruprate = 150
+local healthpoweruptimer = healthpoweruprate
+
+
+
 -- Game setup function
 function _init()
-    -- Initialize player
-    player.x = 64
-    player.y = 64
-    player.lives = 3  -- Set initial number of lives
-    player.gameover = false  -- Reset game over flag
-    player.immune = false  -- Reset immunity
-    player.immune_time = 80  -- Set immune time to 80 for 2.5 seconds
-    player.flicker_timer = 0  -- Reset flicker timer
 
-    -- Set up initial game state
-    
     -- Debug test
     printh("Boot zoo_keeper.")
 end
-
-
 
 -- Draw function (called every frame)
 function _draw()
@@ -97,6 +92,22 @@ end
 function updateanimals()
     for _, animal in pairs(animals) do
         animal.y = animal.y + animalspeed  -- Move animals down slowly
+
+        -- Remove off-screen animals
+        if (animal.y > 135) then
+            del(animals, animal)
+            maxanimals = maxanimals + 1
+            printh("maxanimals is"..maxanimals)
+        end
+    end
+end
+
+function updatepowerups()
+    for _, powerup in pairs(powerups) do
+        powerup.y = powerup.y - 2
+        if (powerup.y < 0) then
+            del(powerups, powerup)
+        end
     end
 end
 
@@ -114,6 +125,10 @@ function drawentities()
 
     for _, obstacle in pairs(obstacles) do
         spr(40, obstacle.x, obstacle.y)  -- Placeholder sprite for obstacles (using sprite index 40)
+    end
+
+    for _, powerup in pairs(powerups) do
+        spr(12, powerup.x, powerup.y)
     end
 end
 
@@ -153,7 +168,16 @@ function scrollbackground()
     -- You can adjust the scrolling speed and add logic for looping backgrounds
 end
 
+function spawnhealthpowerup()
+    healthpoweruptimer = healthpoweruptimer - 1
 
+    if (healthpoweruptimer <= 0) then
+        local newhealthpowerup = { x = flr(rnd(128)), y = 128 }
+        add(powerups, newhealthpowerup)
+
+        healthpoweruptimer = healthpoweruprate
+    end
+end
 
 -- Function to update player animation
 function updateplayeranimation()
@@ -180,9 +204,6 @@ function _update()
         debugmode = not debugmode
     end
     
-    if player.gameover then
-        return  -- Skip updating if the game is over
-    end
 
     -- Update player position
     if (btn(0)) then
@@ -215,6 +236,8 @@ function _update()
     spawnobstacles()
     spawnanimals()
 
+    spawnhealthpowerup()
+
     -- Handle immunity and flickering
     if player.immune then
         player.immune_time = player.immune_time - 1
@@ -224,10 +247,9 @@ function _update()
         if player.immune_time <= 0 then
             player.immune = false
             player.flicker_timer = 0
-        end
+    end
     end
 end
-
 -- Function to check collisions
 function checkcollisions()
     -- Check player collision with obstacles
@@ -268,9 +290,7 @@ function checkcollisions()
                 player.y + 8 > animal.y) then
                 -- Collision detected with an animal
                 if not debugmode then
-                    player.lives = player.lives - 1
-                    player.immune = true
-                    player.immune_time = 80  -- Set immune time to 80 for 2.5 seconds
+                    player.lives = 0
                 end
                 if player.lives <= 0 then
                     player.gameover = true
@@ -282,13 +302,13 @@ function checkcollisions()
 end
 __gfx__
 00000000000009999990000000000999999000000000000000099000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000044444444444444004444444444444400000000000444400000000000000000000000000000000000000000000000000000000000000000000000000
-00700700000aaaaaaaaaa000000aaaaaaaaaa0000000000099999999000000000000000000000000000000000000000000000000000000000000000000000000
-0007700000aaf7cfac7faa0000aaf7cfac7faa00000000000f0ff0f0000000000000000000000000000000000000000000000000000000000000000000000000
-00077000000ffffffffff000000ffffffffff000000000000f0ff0f0000000000000000000000000000000000000000000000000000000000000000000000000
-007007000000ffffefff00000000ffffefff000000000000f0999900000000000000000000000000000000000000000000000000000000000000000000000000
-000000000000000ff000f00000f0000ff0000000000000000f9999f0000000000000000000000000000000000000000000000000000000000000000000000000
-000000000000000ff00f0000000f000ff0000000000000000090090f000000000000000000000000000000000000000000000000000000000000000000000000
+00000000044444444444444004444444444444400000000000444400000000000000000000000000000000000000000000004440000000000000000000000000
+00700700000aaaaaaaaaa000000aaaaaaaaaa0000000000099999999000000000000000000000000000000000000000000044440000000000000000000000000
+0007700000aaf7cfac7faa0000aaf7cfac7faa00000000000f0ff0f0000000000000000000000000000000000000000000044440000000000000000000000000
+00077000000ffffffffff000000ffffffffff000000000000f0ff0f0000000000000000000000000000000000000000000044400000000000000000000000000
+007007000000ffffefff00000000ffffefff000000000000f0999900000000000000000000000000000000000000000000700000000000000000000000000000
+000000000000000ff000f00000f0000ff0000000000000000f9999f0000000000000000000000000000000000000000077000000000000000000000000000000
+000000000000000ff00f0000000f000ff0000000000000000090090f000000000000000000000000000000000000000007000000000000000000000000000000
 000000000000f99dd9f000000000f99dd9f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000f099dd90000000000099dd90f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000f0099999000000000009999900f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
