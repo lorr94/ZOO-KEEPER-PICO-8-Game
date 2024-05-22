@@ -28,11 +28,12 @@ local animalspeed = 0.2 -- speed at which animals move down
 local healthpoweruprate = 150
 local healthpoweruptimer = healthpoweruprate
 
-
+local restart_timer = 300  -- 10 seconds (30 fps)
+local restart_countdown = 0  -- countdown for restart
 
 -- Game setup function
 function _init()
-
+    restart_game()
     -- Debug test
     printh("Boot zoo_keeper.")
 end
@@ -45,6 +46,7 @@ function _draw()
 
     if player.gameover then
         print("Game Over", 48, 64, 7)
+        print("Restarting in " .. flr(restart_countdown / 30 + 1) .. "s", 36, 80, 7)
         return  -- Skip drawing other elements if the game is over
     end
 
@@ -54,6 +56,7 @@ function _draw()
         spr(player.spriteheadindex + 1, player.x + 8, player.y) -- Offset head sprite
         spr(player.spritebodyindex, player.x, player.y + 8) -- Offset body sprite
         spr(player.spritebodyindex + 1, player.x + 8, player.y + 8) -- Offset body sprite
+        updateplayeranimation()
     end
 
     -- Draw other game entities
@@ -74,6 +77,8 @@ function updateentities()
     -- You may want to move them, check for collisions, etc.
     updateobstacles()
     updateanimals()
+    updatepowerups()
+    
 end
 
 -- Function to update obstacle positions
@@ -193,6 +198,33 @@ function updateplayeranimation()
         end
     end
 end
+
+-- Function to restart the game
+function restart_game()
+    player.x = 64
+    player.y = 64
+    player.lives = 3
+    player.gameover = false
+    player.immune = false
+    player.immune_time = 80
+    player.flicker_timer = 0
+    player.framecount = 0
+    player.spriteheadindex = 1
+    player.spritebodyindex = 17
+
+    animals = {}
+    collectibles = {}
+    obstacles = {}
+    powerups = {}
+
+    obstaclespawntimer = obstaclespawnrate
+    animalspawntimer = animalspawnrate
+    healthpoweruptimer = healthpoweruprate
+
+    restart_countdown = 0
+end
+
+
 -->8
 -- code block 1
 
@@ -203,16 +235,23 @@ function _update()
     if (btnp(5)) then
         debugmode = not debugmode
     end
-    
+
+    if player.gameover then
+        restart_countdown = restart_countdown - 1
+        if restart_countdown <= 0 then
+            restart_game()
+        end
+        return  -- Skip updating if the game is over
+    end
 
     -- Update player position
     if (btn(0)) then
         player.x = player.x - player.speed  -- Move left
-        updateplayeranimation()
+        
     end
     if (btn(1)) then
         player.x = player.x + player.speed  -- Move right
-        updateplayeranimation()
+        
     end
 
     -- Enforce player boundaries
@@ -247,11 +286,13 @@ function _update()
         if player.immune_time <= 0 then
             player.immune = false
             player.flicker_timer = 0
-    end
+        end
     end
 end
+
 -- Function to check collisions
 function checkcollisions()
+   
     -- Check player collision with obstacles
     if not player.immune then
         for _, obstacle in pairs(obstacles) do
@@ -267,6 +308,7 @@ function checkcollisions()
                 end
                 if player.lives <= 0 then
                     player.gameover = true
+                    restart_countdown = restart_timer
                 end
                 -- Move player up by the height of the player character (16 pixels)
                 player.y = player.y - 16
@@ -294,11 +336,28 @@ function checkcollisions()
                 end
                 if player.lives <= 0 then
                     player.gameover = true
+                    restart_countdown = restart_timer
                 end
                 break  -- Exit the loop after the first collision
             end
         end
     end
+
+    for _, powerup in pairs(powerups) do
+            if (player.x < powerup.x + 8 and
+                player.x + 8 > powerup.x and
+                player.y < powerup.y + 8 and
+                player.y + 8 > powerup.y) then
+           
+                -- Collision detected with an health powerup
+                 if player.lives < 3 then
+                 player.lives = player.lives + 1
+                 end
+
+                 del(powerups, powerup)
+        end    
+    end
+
 end
 __gfx__
 00000000000009999990000000000999999000000000000000099000000000000000000000000000000000000000000000000000000000000000000000000000
