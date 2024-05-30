@@ -23,7 +23,7 @@ local animalspawntimer = animalspawnrate
 local maxanimals = 5  -- maximum number of animals
 local debugmode = false -- debug mode flag
 
-local animalspeed = 0.2 -- speed at which animals move down
+local animalspeed = 1 -- speed at which animals move down
 
 local healthpoweruprate = 150
 local healthpoweruptimer = healthpoweruprate
