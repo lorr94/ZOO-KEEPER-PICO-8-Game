@@ -38,6 +38,7 @@ local increment_count = 0
 local max_increments = 5
 
 local intensityTrigger = 200
+local just_restarted = false
 
 -- Game setup function
 function _init()
@@ -46,7 +47,6 @@ function _init()
     printh("Boot zoo_keeper.")
 end
 
--- Draw function (called every frame)
 -- Draw function (called every frame)
 function _draw()
     -- Draw background
@@ -103,10 +103,18 @@ function updateobstacles()
     end
 end
 
--- Function to update animal positions (modified to move slowly downward)
 function updateanimals()
     for _, animal in pairs(animals) do
+        
+        printh("animal before speed: "..animal.y)
         animal.y = animal.y + animalspeed  -- Move animals down slowly
+        printh("animal after speed: "..animal.y)
+        -- Animate animal
+        animal.framecount = (animal.framecount + 1)
+        if animal.framecount >= animal.framedelay then
+            animal.framecount = 0
+            animal.animphase = not animal.animphase  -- Toggle animation phase
+        end
 
         -- Remove off-screen animals
         if (animal.y > 135) then
@@ -129,9 +137,12 @@ end
 -- Function to draw entities
 function drawentities()
     -- Draw animals, collectibles, and obstacles
-    -- You may want to use different sprite numbers or draw custom sprites
     for _, animal in pairs(animals) do
-        spr(41, animal.x, animal.y)  -- Placeholder sprite for animals (using sprite index 41)
+        local sprites = animal.animphase and animal.sprites1 or animal.sprites2
+        spr(sprites[1], animal.x, animal.y)
+        spr(sprites[2], animal.x + 8, animal.y)
+        spr(sprites[3], animal.x, animal.y + 8)
+        spr(sprites[4], animal.x + 8, animal.y + 8)
     end
 
     for _, collectible in pairs(collectibles) do
@@ -169,7 +180,15 @@ function spawnanimals()
     -- Check if it's time to spawn a new animal and if the maximum limit is not reached
     if (animalspawntimer <= 0 and #animals < maxanimals) then
         -- Spawn animal at a random x position at the top of the screen
-        local newanimal = { x = flr(rnd(120)), y = 0 }
+        local newanimal = {
+            x = flr(rnd(120)),
+            y = 0,
+            sprites1 = {44, 45, 60, 61}, -- First set of sprites
+            sprites2 = {46, 47, 62, 63}, -- Second set of sprites
+            animphase = false, -- Animation phase to toggle between sets
+            framecount = 0,
+            framedelay = 5 -- Adjust as needed for animation speed
+        }
         add(animals, newanimal)
 
         -- Reset the spawn timer
@@ -210,21 +229,22 @@ function updateplayeranimation()
         -- Increment distance traveled
         distance_traveled = distance_traveled + 1
 
-        -- Increment speed and spawn rate every 1000 meters
-        if distance_traveled == intensityTrigger and increment_count < max_increments then
-            increment_count = increment_count + 1
-            animalspeed = animalspeed + 0.5
-            obstaclespeed = obstaclespeed + 0.5
-            animalspawnrate = max(animalspawnrate - 10, 30)
-            obstaclespawnrate = max(obstaclespawnrate - 10, 30)
-            maxanimals = maxanimals + 1
-            intensityTrigger = intensityTrigger * 2
-        end
+      
     end
 end
 
 -- Function to restart the game
 function restart_game()
+    distance_traveled = 0
+    healthpoweruptimer = healthpoweruprate
+    obstaclespawntimer = obstaclespawnrate
+    animalspawntimer = animalspawnrate
+    maxanimals = 5
+    animalspeed = 1
+    obstaclespeed = 2
+    restart_countdown = 0
+    increment_count = 0
+    intensityTrigger = 200
     player.x = 64
     player.y = 64
     player.lives = 3
@@ -235,38 +255,19 @@ function restart_game()
     player.framecount = 0
     player.spriteheadindex = 1
     player.spritebodyindex = 17
-
     animals = {}
     collectibles = {}
     obstacles = {}
     powerups = {}
+    just_restarted = true  -- Indicate that the game has just been restarted
 
-    obstaclespawntimer = obstaclespawnrate
-    animalspawntimer = animalspawnrate
-    healthpoweruptimer = healthpoweruprate
-
-    restart_countdown = 0
-
-    -- Reset distance and increment counts
-    distance_traveled = 0
-    increment_count = 0
-
-    local distance_traveled = 0
-    local increment_count = 0
-    local max_increments = 5
-
-    local intensityTrigger = 200
-
-    local obstaclespawnrate = 60  -- number of frames between obstacle spawns
-    local obstaclespawntimer = obstaclespawnrate
-    local animalspawnrate = 120    -- number of frames between animal spawns
-    local animalspawntimer = animalspawnrate
-    local maxanimals = 5  -- maximum number of animals
+    printh("distance reset to " .. distance_traveled)
+    printh("animal speed reset to " .. animalspeed)
+    printh("obstacle speed reset to " .. obstaclespeed)
 end
 
 -->8
 -- code block 1
-
 
 -- Update function (called every frame)
 function _update()
@@ -311,7 +312,6 @@ function _update()
     -- Spawn obstacles and animals
     spawnobstacles()
     spawnanimals()
-
     spawnhealthpowerup()
 
     -- Handle immunity and flickering
@@ -325,6 +325,22 @@ function _update()
             player.flicker_timer = 0
         end
     end
+
+    -- Increment speed and spawn rate every 1000 meters
+    if distance_traveled == intensityTrigger and increment_count < max_increments then
+        if not just_restarted then  -- Only increment if the game hasn't just been restarted
+            increment_count = increment_count + 1
+            animalspeed = animalspeed + 0.5
+            obstaclespeed = obstaclespeed + 0.5
+            animalspawnrate = max(animalspawnrate - 10, 30)
+            obstaclespawnrate = max(obstaclespawnrate - 10, 30)
+            maxanimals = maxanimals + 1
+            intensityTrigger = intensityTrigger * 2
+        end
+    end
+
+    -- Reset the just_restarted flag after the first frame
+    just_restarted = false
 end
 
 -- Function to check collisions
@@ -393,6 +409,8 @@ function checkcollisions()
         end
     end
 end
+
+
 __gfx__
 00000000000009999990000000000999999000000000000000099000000000000000000000000000000000000000000000000000667766000667766000000000
 00000000044444444444444004444444444444400000000000444400000000000000000000000000000000000000000000004440777777000777777000000000
@@ -410,10 +428,10 @@ __gfx__
 00000000000000000900000000000900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0000000000999900009999000000000000000000000000000000000000aaaaa000000bb007000700000000000000000000000776667000000000776667000000
-00000000444444444444444400000000000000000000000000000000099999990000bb1b00777000000000000000000000007077777000000007077777000000
-000000000fc77cf00fc77cf0000000000000000000000000000000000047cfc00000bbb000c7c000000000000000000000070066666000000070066666000000
-0000000000ffff0000ffff000000000000000000000000000000000000fff4f090000b0000565750000000000000000000500077777000000500077777000000
+0000000000999900009999000000000000000000000000000000000000aaaaa000000bb007000700000000000000000000000676667600000000676667600000
+00000000444444444444444400000000000000000000000000000000099999990000bb1b00777000000000000000000000000777777700000000777777700000
+000000000fc77cf00fc77cf0000000000000000000000000000000000047cfc00000bbb000c7c000000000000000000000000766666700000000766666700000
+0000000000ffff0000ffff000000000000000000000000000000000000fff4f090000b0000565750000000000000000000000077777000000000077777000000
 00000000f00ff000000ff00f00000000000000000000000000000000000ff0000b000bb000777770000000000000000000000066666000000000066666000000
 000000000f9449f00f9449f000000000000000000000000000000000009ff9000b0bb0bb00575750000000000000000000000077777000000000077777000000
 000000000099990ff0999900000000000000000000000000000000000f0990f000bbbbbb00757570000000000000000000000066666000000000066666000000

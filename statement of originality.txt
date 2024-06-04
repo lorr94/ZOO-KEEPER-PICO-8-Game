@@ -1,0 +1,7 @@
+name: Ionita Daniel Laurentiu
+
+  I declare that everything I have submitted in this assignment is entirely my
+  own work, with the following exception:
+
+- comment: used a quick code template structure by chatGPT with desired functions/mechanics for the proposed game
+  url: https://chatgpt.com/?oai-dm=1
